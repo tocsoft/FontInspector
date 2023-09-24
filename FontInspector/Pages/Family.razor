@@ -1,0 +1,258 @@
+﻿@page "/counter"
+@using SixLabors.Fonts;
+@using SixLabors.Fonts.Unicode;
+@using System.Text.Unicode;
+@using System.Text;
+@using System.Runtime.CompilerServices;
+@using System.Numerics;
+
+<MudPaper Class="pa-3">
+    <MudCardHeader>@FontFamily.Name - @style</MudCardHeader>
+    <MudToolBar>
+        <MudCheckBox @bind-Checked="IsItalic" Label="italic"></MudCheckBox>
+        <MudCheckBox @bind-Checked="IsBold" Label="bold"></MudCheckBox>
+        <MudTextField Label="Search" Placeholder="character to codepoint to search for" @bind-Value="@searchTerm" DebounceInterval="100" Immediate="true" />
+    </MudToolBar>
+    <MudGrid>
+        @if (!Characters.Any())
+        {
+            <MudItem xs="12">
+                <p>No glyphs availible for the selected style.</p>
+            </MudItem>
+        }
+        else if (!FilteredCharacters.Any())
+        {
+            <MudItem xs="12">
+                <p>No matching glyphs found</p>
+            </MudItem>
+        }
+        else
+        {
+            <Virtualize Items="FilteredCharacters" Context="character">
+                <MudItem xs="6" sm="4" md="3" lg="2" Class="glyph">
+                    <MudCard>
+                        <MudCardHeader>
+                            #@character.CodpointHex - @character.Text
+
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudStack>
+                                @((MarkupString)character.Svg)
+                                <div>@character.Name</div>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </Virtualize>
+        }
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public FontFamily FontFamily { get; set; }
+    private FontStyle _style = FontStyle.Regular;
+    private FontStyle style
+    {
+        get => _style;
+        set
+        {
+            _style = value;
+            filteredCharacters = null;
+            _characters = null;
+        }
+    }
+
+    public bool IsBold
+    {
+        get => style.HasFlag(FontStyle.Bold);
+        set
+        {
+            if (value)
+            {
+                style |= FontStyle.Bold;
+            }
+            else
+            {
+                style &= ~FontStyle.Bold;
+            }
+        }
+    }
+    public bool IsItalic
+    {
+        get => style.HasFlag(FontStyle.Italic);
+        set
+        {
+            if (value)
+            {
+                style |= FontStyle.Italic;
+            }
+            else
+            {
+                style &= ~FontStyle.Italic;
+            }
+        }
+    }
+
+    private IEnumerable<FontStyle> styles = Array.Empty<FontStyle>();
+
+    private bool styleExists = false;
+
+    public List<int> _codepointsToFind = new();
+    private string? _rawFilter = null;
+    private List<Character> filteredCharacters = null;
+    private string searchTerm
+    {
+        get
+        {
+            return _rawFilter ?? ""; ;
+        }
+        set
+        {
+            _rawFilter = value;
+            var parts = (value ?? "").Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            _codepointsToFind.Clear();
+
+            foreach (var p in parts)
+            {
+                if (p.StartsWith('#') && p.Length == 5)
+                {
+                    try
+                    {
+                        var trimmed = value?.Trim().TrimStart('#');
+                        var bytes = Convert.FromHexString(trimmed);
+                        var buffer = new byte[4];
+                        Array.Copy(bytes, 0, buffer, 4 - bytes.Length, bytes.Length);
+                        Array.Reverse(buffer);
+                        var val = BitConverter.ToInt32(buffer);
+                        _codepointsToFind.Add(val);
+                        continue;
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+                }
+
+                var codePoints = SixLabors.Fonts.Unicode.MemoryExtensions.EnumerateCodePoints(p);
+                foreach (var cp in codePoints)
+                {
+                    _codepointsToFind.Add(cp.Value);
+                }
+            }
+
+            filteredCharacters = null;
+        }
+    }
+    private List<Character> _characters = null;
+    private List<Character> Characters
+    {
+        get
+        {
+            if (_characters == null)
+            {
+                var font = FontFamily.CreateFont(32, style);
+                _characters = new List<Character>();
+                if (FontFamily.GetAvailableStyles().Contains(style))
+                {
+                    var opts = new TextOptions(font);
+                    foreach (var codepoint in font.FontMetrics.GetAvailableCodePoints())
+                    {
+                        _characters.Add(new Character(codepoint, opts));
+                    }
+                }
+            }
+
+            return _characters;
+        }
+        set
+        {
+            _characters = value;
+            filteredCharacters = null;
+        }
+    }
+
+    private List<Character> FilteredCharacters
+    {
+        get
+        {
+            if (filteredCharacters == null)
+            {
+                if (!_codepointsToFind.Any())
+                {
+                    return Characters;
+                }
+
+                IEnumerable<Character> chars = Enumerable.Empty<Character>();
+
+                foreach (var cp in _codepointsToFind)
+                {
+                    chars = chars.Union(Characters.Where(x => x.codepoint.Value == cp));
+                }
+
+                filteredCharacters = chars.ToList();
+            }
+
+            return filteredCharacters;
+        }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        var styles = FontFamily.GetAvailableStyles();
+
+        if (!styles.Contains(style))
+        {
+            style = styles.First();
+        }
+
+
+        return base.OnInitializedAsync();
+    }
+
+    public record Character(CodePoint codepoint, TextOptions opts)
+    {
+        private string? _svg = null;
+        private string? _name = null;
+        private string? _text = null;
+        private string? _hex = null;
+        public string Svg => _svg ??= CreateSvg();
+
+        public string Name => _name ??= @NameLookup.GetName(codepoint.Value);
+        public string Text => _text ??= codepoint.ToString()?.Trim() ?? "";
+        public string CodpointHex => _hex ??= codepoint.Value.ToString("X4");
+
+        private string CreateSvg()
+        {
+            try
+            {
+                if (opts.Font.FontMetrics.TryGetGlyphMetrics(codepoint,
+                  TextAttributes.None,
+                  TextDecorations.None,
+                  LayoutMode.HorizontalTopBottom,
+                  ColorFontSupport.MicrosoftColrFormat,
+                  out var glyphs))
+                {
+                    if (glyphs.All(x => x.GlyphType == GlyphType.Fallback))
+                    {
+                        return "N/A";
+                    }
+
+                    var renderer = new SvgFontRenderer(opts.Font);
+                    foreach (var m in glyphs)
+                    {
+                        renderer.SetCurrentGlyphMetric(m);
+                        m.RenderTo(renderer, Vector2.Zero, Vector2.Zero, GlyphLayoutMode.Horizontal, opts);
+                    }
+
+                    return renderer.Svg;
+                }
+
+            }
+            catch (Exception ex)
+            {
+            }
+            return "";
+        }
+    }
+}
