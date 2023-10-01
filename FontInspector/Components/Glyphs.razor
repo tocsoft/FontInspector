@@ -173,7 +173,7 @@
                     chars = chars.Union(Characters.Where(x => x.codepoint.Value == cp));
                 }
 
-                filteredCharacters = chars.ToList();
+                filteredCharacters = chars.OrderBy(x => x.codepoint.Value).ToList();
             }
 
             return filteredCharacters;
