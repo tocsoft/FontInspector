@@ -1,58 +1,60 @@
-﻿@page "/counter"
-@using SixLabors.Fonts;
+﻿@using SixLabors.Fonts;
 @using SixLabors.Fonts.Unicode;
 @using System.Text.Unicode;
 @using System.Text;
 @using System.Runtime.CompilerServices;
 @using System.Numerics;
 
-<MudPaper Class="pa-3">
-    <MudCardHeader>@FontFamily.Name - @style</MudCardHeader>
-    <MudToolBar>
-        <MudCheckBox @bind-Checked="IsItalic" Label="italic"></MudCheckBox>
-        <MudCheckBox @bind-Checked="IsBold" Label="bold"></MudCheckBox>
-        <MudTextField Label="Search" Placeholder="character to codepoint to search for" @bind-Value="@searchTerm" DebounceInterval="100" Immediate="true" />
-    </MudToolBar>
-    <MudGrid>
-        @if (!Characters.Any())
-        {
-            <MudItem xs="12">
-                <p>No glyphs availible for the selected style.</p>
-            </MudItem>
-        }
-        else if (!FilteredCharacters.Any())
-        {
-            <MudItem xs="12">
-                <p>No matching glyphs found</p>
-            </MudItem>
-        }
-        else
-        {
-            <Virtualize Items="FilteredCharacters" Context="character">
-                <MudItem xs="6" sm="4" md="3" lg="2" Class="glyph">
-                    <MudCard>
-                        <MudCardHeader>
-                            #@character.CodpointHex - @character.Text
+<MudSlider @bind-Value="@Size">Size - @(Size)pt</MudSlider>
+<MudTextField Label="Search" Placeholder="character to codepoint (start with #) to search for" @bind-Value="@searchTerm" DebounceInterval="100" Immediate="true" />
+<MudGrid>
+    @if (!Characters.Any())
+    {
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Warning">@(FontFamily.Name) in @(FriendlyStyleName) is not avalible, you'll need to load additional font files for this combination to work.</MudAlert>
+        </MudItem>
+    }
+    else if (!FilteredCharacters.Any())
+    {
+        <MudItem xs="12">
+            <p>No matching glyphs found</p>
+        </MudItem>
+    }
+    else
+    {
+        <Virtualize Items="FilteredCharacters" Context="character">
+            <MudItem xs="6" sm="4" md="3" lg="2" Class="glyph">
+                <MudCard>
+                    <MudCardHeader>
+                        #@character.CodpointHex - @character.Text
 
-                        </MudCardHeader>
-                        <MudCardContent>
-                            <MudStack>
-                                @((MarkupString)character.Svg)
-                                <div>@character.Name</div>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
-            </Virtualize>
-        }
-    </MudGrid>
-</MudPaper>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack>
+                            @((MarkupString)character.Svg)
+                            <div>@character.Name</div>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </Virtualize>
+    }
+</MudGrid>
 
 @code {
+
+    public string FriendlyStyleName => Style switch
+    {
+        FontStyle.BoldItalic => "Italic Bold",
+        _ => Style.ToString()
+    };
+
+
     [Parameter]
     public FontFamily FontFamily { get; set; }
     private FontStyle _style = FontStyle.Regular;
-    private FontStyle style
+    [Parameter]
+    public FontStyle Style
     {
         get => _style;
         set
@@ -62,35 +64,16 @@
             _characters = null;
         }
     }
-
-    public bool IsBold
+    // TODO make this persitant/shared between tabs
+    private int _size = 48;
+    private int Size
     {
-        get => style.HasFlag(FontStyle.Bold);
+        get => _size;
         set
         {
-            if (value)
-            {
-                style |= FontStyle.Bold;
-            }
-            else
-            {
-                style &= ~FontStyle.Bold;
-            }
-        }
-    }
-    public bool IsItalic
-    {
-        get => style.HasFlag(FontStyle.Italic);
-        set
-        {
-            if (value)
-            {
-                style |= FontStyle.Italic;
-            }
-            else
-            {
-                style &= ~FontStyle.Italic;
-            }
+            _size = value;
+            filteredCharacters = null;
+            _characters = null;
         }
     }
 
@@ -151,9 +134,9 @@
         {
             if (_characters == null)
             {
-                var font = FontFamily.CreateFont(32, style);
+                var font = FontFamily.CreateFont(_size, Style);
                 _characters = new List<Character>();
-                if (FontFamily.GetAvailableStyles().Contains(style))
+                if (FontFamily.GetAvailableStyles().Contains(Style))
                 {
                     var opts = new TextOptions(font);
                     foreach (var codepoint in font.FontMetrics.GetAvailableCodePoints())
@@ -201,9 +184,9 @@
     {
         var styles = FontFamily.GetAvailableStyles();
 
-        if (!styles.Contains(style))
+        if (!styles.Contains(Style))
         {
-            style = styles.First();
+            Style = styles.First();
         }
 
 
@@ -226,28 +209,13 @@
         {
             try
             {
-                if (opts.Font.FontMetrics.TryGetGlyphMetrics(codepoint,
-                  TextAttributes.None,
-                  TextDecorations.None,
-                  LayoutMode.HorizontalTopBottom,
-                  ColorFontSupport.MicrosoftColrFormat,
-                  out var glyphs))
-                {
-                    if (glyphs.All(x => x.GlyphType == GlyphType.Fallback))
+                var renderer = new SvgTextFontRenderer(opts)
                     {
-                        return "N/A";
-                    }
-
-                    var renderer = new SvgFontRenderer(opts.Font);
-                    foreach (var m in glyphs)
-                    {
-                        renderer.SetCurrentGlyphMetric(m);
-                        m.RenderTo(renderer, Vector2.Zero, Vector2.Zero, GlyphLayoutMode.Horizontal, opts);
-                    }
-
-                    return renderer.Svg;
-                }
-
+                        AddMetricAddornments = true,
+                        Padding = opts.Font.Size / 2,
+                    };
+                TextRenderer.RenderTextTo(renderer, Text, opts);
+                return renderer.Svg;
             }
             catch (Exception ex)
             {

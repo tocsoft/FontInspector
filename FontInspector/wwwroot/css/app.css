@@ -3,27 +3,23 @@
     fill: black;
 }
 
-.glyph svg line.adornment {
+svg line.adornment {
     stroke: black;
     opacity: 0.2;
     stroke-dasharray: 4;
     stroke-width: 1px;
 }
 
-.glyph svg line.adornment-line-height {
+svg line.adornment-line-height {
     stroke: green;
 }
 
-.glyph svg line.adornment-descender {
+svg line.adornment-descender {
     stroke: red;
 }
 
-.glyph svg line.adornment-assender {
+svg line.adornment-assender {
     stroke: red;
-}
-
-.glyph svg {
-    height: 130px;
 }
 
 .glyph {
@@ -31,7 +27,7 @@
 }
 
     .glyph .mud-card-content {
-        height: 190px;
+        min-height: 190px;
     }
 
 .mud-grid > div {

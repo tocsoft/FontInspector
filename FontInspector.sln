@@ -5,7 +5,7 @@ VisualStudioVersion = 17.7.34024.191
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontInspector", "FontInspector\FontInspector.csproj", "{3BCAEA5A-6471-4238-8924-E13A45715BE8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SixLabors.Fonts", "..\..\Fonts\src\SixLabors.Fonts\SixLabors.Fonts.csproj", "{4A60828D-04C3-4BB4-8E6A-570EFA0F5143}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SixLabors.Fonts", "..\Fonts\src\SixLabors.Fonts\SixLabors.Fonts.csproj", "{4A60828D-04C3-4BB4-8E6A-570EFA0F5143}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +29,6 @@ Global
 		SolutionGuid = {72F6B181-5628-4AA5-88FE-683041A77A57}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		..\..\Fonts\shared-infrastructure\src\SharedInfrastructure\SharedInfrastructure.projitems*{4a60828d-04c3-4bb4-8e6a-570efa0f5143}*SharedItemsImports = 5
+		..\Fonts\shared-infrastructure\src\SharedInfrastructure\SharedInfrastructure.projitems*{4a60828d-04c3-4bb4-8e6a-570efa0f5143}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

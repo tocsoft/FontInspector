@@ -1,0 +1,127 @@
+﻿@using SixLabors.Fonts;
+@using SixLabors.Fonts.Unicode;
+@using System.Text.Unicode;
+@using System.Text;
+@using System.Runtime.CompilerServices;
+@using System.Numerics;
+@inject IJSRuntime JsRuntime
+
+<MudTextField Label="Text" Lines="@lines" Placeholder="Some text to show" @bind-Value="@text" DebounceInterval="100" />
+<MudSlider @bind-Value="@size">Size - @(size)pt</MudSlider>
+<div style="overflow:auto" id="text-area">
+    @if (CanRenderSvg)
+    {
+        @((MarkupString)Svg)
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning">@(FontFamily.Name) in @(FriendlyStyleName) is not avalible, you'll need to load additional font files for this combination to work.</MudAlert>
+    }
+</div>
+
+
+@code {
+    [Parameter]
+    public FontFamily FontFamily { get; set; }
+
+    [Parameter]
+    public FontStyle Style { get; set; }
+    public string FriendlyStyleName => Style switch
+    {
+        FontStyle.BoldItalic => "Italic Bold",
+        _ => Style.ToString()
+    };
+
+    public bool IsBold => Style.HasFlag(FontStyle.Bold);
+    public bool IsItalic => Style.HasFlag(FontStyle.Italic);
+
+    private string _text = "The quick brown fox jumps over the lazy dog.";
+
+    private string text
+    {
+        get => _text;
+        set
+        {
+            _text = value;
+            lines = (value ?? "").Split('\n').Length + 1;
+            _ = RefreshSvg();
+        }
+    }
+
+    private int _size = 64;
+    private int size
+    {
+        get => _size;
+        set
+        {
+            _size = value;
+            _ = RefreshSvg();
+        }
+    }
+
+    private bool CanRenderSvg
+    {
+        get => FontFamily.GetAvailableStyles().Contains(Style);
+    }
+
+    private int lines = 2;
+
+    public async Task RefreshSvg()
+    {
+        try
+        {
+            SvgLoading = true;
+            var old = Svg;
+            Svg = null;
+
+            var dimension = await JsRuntime.InvokeAsync<WindowDimension>("getElementDimensions", "#text-area");
+            int counter = 100;
+            while (dimension == null && counter > 0)
+            {
+                --counter;
+                await Task.Delay(100);
+                dimension = await JsRuntime.InvokeAsync<WindowDimension>("getElementDimensions", "#text-area");
+            }
+
+            var padding = 20;
+            var width = (dimension?.Width ?? 1000) - (padding * 2);
+            var font = FontFamily.CreateFont(size, Style);
+
+            var opts = new TextOptions(font)
+                {
+                    WrappingLength = width,
+                    WordBreaking = WordBreaking.BreakWord,
+                };
+            // wrapper size!!!
+            var renderer = new SvgTextFontRenderer(opts)
+                {
+                    Padding = padding,
+                };
+            TextRenderer.RenderTextTo(renderer, text, opts);
+
+            Svg = renderer.Svg;
+            if (old != Svg)
+            {
+                this.StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            var r = ex;
+        }
+    }
+
+    private bool SvgLoading { get; set; } = false;
+    private string Svg { get; set; }
+    public class WindowDimension
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        _ = RefreshSvg();
+        return base.OnInitializedAsync();
+    }
+}
