@@ -1,26 +1,29 @@
 ﻿@page "/"
 @using SixLabors.Fonts;
 @inject ISnackbar Snackbar
+@inject HttpClient HttpClient
 
 <PageTitle>Font Inspector</PageTitle>
 
-<MudStack>
+<MudStack Class="pa-6">
     @if (families.Any())
     {
-        <MudSelect T="FontFamily" Label="Family" Variant="Variant.Filled" @bind-Value="selectedFont" AnchorOrigin="Origin.BottomCenter">
-            @foreach (var font in families)
-            {
-                <MudSelectItem T="FontFamily" Value="@font">@font.Name</MudSelectItem>
-            }
-        </MudSelect>
+
         <MudItem>
             <MudStack Row="true">
+
+                <MudSelect T="FontFamily" Label="Family" Variant="Variant.Outlined" @bind-Value="selectedFont" AnchorOrigin="Origin.BottomCenter">
+                    @foreach (var font in families)
+                    {
+                        <MudSelectItem T="FontFamily" Value="@font">@font.Name</MudSelectItem>
+                    }
+                </MudSelect>
                 <MudCheckBox @bind-Checked="IsItalic" Label="italic"></MudCheckBox>
                 <MudCheckBox @bind-Checked="IsBold" Label="bold"></MudCheckBox>
             </MudStack>
         </MudItem>
 
-        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabs Rounded="true" PanelClass="pt-6">
             <MudTabPanel Text="Code Points">
                 <Glyphs FontFamily="@selectedFont" Style="@style" />
             </MudTabPanel>
@@ -38,7 +41,7 @@
                          <MudPaper Outlined="true" Class="@DragClass">
                              @if (loadingFonts)
                             {
-                                <p>Processing fonts...</p>
+                                <p>Loading...</p>
                                 <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
                             }
                             else
@@ -66,6 +69,14 @@
                         </MudPaper>
                     </ButtonTemplate>
                 </MudFileUpload>
+                @if (!opensansLoaded)
+                {
+                    <MudButton OnClick="LoadOpenSans" Color="Color.Secondary">Load Open Sans</MudButton>
+                }
+                @if (!twemojiLoaded)
+                {
+                    <MudButton OnClick="LoadTwemoji" Color="Color.Secondary">Load Twemoji</MudButton>
+                }
             </MudTabPanel>
         </MudTabs>
     }
@@ -81,7 +92,7 @@
                  <MudPaper Outlined="true" Class="@DragClass">
                      @if (loadingFonts)
                     {
-                        <p>Processing fonts...</p>
+                        <p>Loading...</p>
                         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
                     }
                     else
@@ -96,8 +107,14 @@
                 </MudPaper>
             </ButtonTemplate>
         </MudFileUpload>
-    }
 
+        @if (!loadingFonts)
+        {
+            <text>
+                <p>Dont have a font file? try it out one of these. <MudButton OnClick="LoadOpenSans" Color="Color.Secondary">Load Open Sans</MudButton> or <MudButton OnClick="LoadTwemoji" Color="Color.Secondary">Load Twemoji</MudButton></p>
+            </text>
+        }
+    }
 
 </MudStack>
 
@@ -163,32 +180,85 @@
 
     private IEnumerable<FontFamily> families = Enumerable.Empty<FontFamily>();
 
-    private async Task OnInputFileChanged(InputFileChangeEventArgs e)
+    private bool twemojiLoaded = false;
+    private bool opensansLoaded = false;
+
+    private async Task LoadTwemoji(MouseEventArgs e)
+    {
+        twemojiLoaded = true;
+        var urls = new[]
+        {
+            "./sample-data/Twemoji.Mozilla.ttf",
+    };
+        await LoadRemoteFonts(urls);
+    }
+
+    private async Task LoadOpenSans(MouseEventArgs e)
+    {
+        opensansLoaded = true;
+        var urls = new[]
+        {
+            "./sample-data/OpenSans-Bold.ttf",
+            "./sample-data/OpenSans-Italic.ttf",
+            "./sample-data/OpenSans-BoldItalic.ttf",
+            "./sample-data/OpenSans-Regular.ttf",
+    };
+        await LoadRemoteFonts(urls);
+    }
+
+    private async Task LoadRemoteFonts(IEnumerable<string> urls)
+    {
+        loadingFonts = true;
+        await Task.Yield();
+
+        try
+        {
+            var fetchers = urls.Select(async x => new
+            {
+                filenames = x.Substring(x.LastIndexOf('/')+1),
+                response = await HttpClient.GetAsync(x),
+            });
+
+            var fetched = await Task.WhenAll(fetchers);
+            var fonts = fetched.Select(x => (x.filenames, (Func<Stream>)(() => x.response.Content.ReadAsStream())));
+            await InstallFonts(fonts);
+        }
+        catch (Exception ex)
+        {
+            badFileNames.Add($"OpenSans (fetch) - {ex.Message}");
+        }
+    }
+
+    private async Task InstallFont(string filename, Func<Stream> streamFunc)
+    {
+        try
+        {
+            using var fs = streamFunc();
+            using var ms = new MemoryStream();
+            await fs.CopyToAsync(ms);
+            ms.Position = 0;
+            var fontFamily = fontCollection.Add(ms, out var desc);
+            selectedFont = fontFamily;
+            style = desc.Style;
+            fileNames.Add($"{filename} ({fontFamily.Name})");
+        }
+        catch (Exception ex)
+        {
+            badFileNames.Add($"{filename} - {ex.Message}");
+        }
+    }
+
+    private async Task InstallFonts(IEnumerable<(string filename, Func<Stream> streamFunc)> files)
     {
         loadingFonts = true;
         await Task.Yield();
 
         ClearDragClass();
-        var files = e.GetMultipleFiles();
         badFileNames.Clear();
 
         foreach (var file in files)
         {
-            try
-            {
-                using var fs = file.OpenReadStream(maxAllowedSize: 2048000);
-                using var ms = new MemoryStream();
-                await fs.CopyToAsync(ms);
-                ms.Position = 0;
-                var fontFamily = fontCollection.Add(ms, out var desc);
-                selectedFont = fontFamily;
-                style = desc.Style;
-                fileNames.Add($"{file.Name} ({fontFamily.Name})");
-            }
-            catch (Exception ex)
-            {
-                badFileNames.Add($"{file.Name} - {ex.Message}");
-            }
+            await InstallFont(file.filename, file.streamFunc);
         }
         families = fontCollection.Families;
         loadingFonts = false;
@@ -199,12 +269,20 @@
         }
     }
 
+    private async Task OnInputFileChanged(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles();
+        var fonts = files.Select(x => (x.Name, (Func<Stream>)(() => (Stream)x.OpenReadStream(maxAllowedSize: 2048000))));
+        await InstallFonts(fonts);
+    }
+
     private async Task Clear()
     {
         fileNames.Clear();
         ClearDragClass();
         await Task.Delay(100);
     }
+
     private void Upload()
     {
         //Upload the files here

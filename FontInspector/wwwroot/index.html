@@ -2,15 +2,31 @@
 <html lang="en">
 
 <head>
+    <style>
+        :root {
+            --mud-palette-background: rgba(50,51,61,1);
+            --mud-palette-primary-text: rgba(178,176,191,1);
+        }
+
+        html {
+            background-color: var(--mud-palette-background);
+            color: var( --mud-palette-primary-text);
+        }
+
+        #app-loader {
+            padding-top: 20px;
+            font-family:sans-serif;
+            text-align: center;
+        }
+    </style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>FontInspector</title>
     <base href="./" />
-    <link href="css/app.css" rel="stylesheet" />
-    <link href="FontInspector.styles.css" rel="stylesheet" />
-
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="FontInspector.styles.css" rel="stylesheet" />
     <script>
         window.getElementDimensions = function (selector) {
             var elm = document.querySelector(selector);
@@ -27,7 +43,7 @@
 </head>
 
 <body>
-    <div id="app">Loading...</div>
+    <div id="app"><div id="app-loader">Font Inspector Loading...</div></div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

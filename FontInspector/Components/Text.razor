@@ -6,12 +6,14 @@
 @using System.Numerics;
 @inject IJSRuntime JsRuntime
 
-<MudTextField Label="Text" Lines="@lines" Placeholder="Some text to show" @bind-Value="@text" DebounceInterval="100" />
+<MudTextField Label="Text" Lines="@lines" Placeholder="Some text to show" @bind-Value="@text" DebounceInterval="100" Variant="Variant.Outlined" />
 <MudSlider @bind-Value="@size">Size - @(size)pt</MudSlider>
 <div style="overflow:auto" id="text-area">
     @if (CanRenderSvg)
     {
-        @((MarkupString)Svg)
+        <MudPaper Class="svg-text">
+            @((MarkupString)Svg)
+        </MudPaper>
     }
     else
     {
@@ -21,11 +23,31 @@
 
 
 @code {
-    [Parameter]
-    public FontFamily FontFamily { get; set; }
+    private FontFamily _fontFamily;
 
     [Parameter]
-    public FontStyle Style { get; set; }
+    public FontFamily FontFamily
+    {
+        get => _fontFamily;
+        set
+        {
+            _fontFamily = value;
+            _ = RefreshSvg();
+        }
+    }
+
+    public FontStyle _style { get; set; }
+    [Parameter]
+    public FontStyle Style
+    {
+        get => _style;
+        set
+        {
+            _style = value;
+            _ = RefreshSvg();
+        }
+    }
+
     public string FriendlyStyleName => Style switch
     {
         FontStyle.BoldItalic => "Italic Bold",

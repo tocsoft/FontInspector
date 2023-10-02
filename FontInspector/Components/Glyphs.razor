@@ -5,8 +5,10 @@
 @using System.Runtime.CompilerServices;
 @using System.Numerics;
 
+<MudTextField Variant="Variant.Outlined" Label="Search" Placeholder="character to codepoint (start with #) to search for" @bind-Value="@searchTerm" DebounceInterval="100" Immediate="true" />
+
 <MudSlider @bind-Value="@Size">Size - @(Size)pt</MudSlider>
-<MudTextField Label="Search" Placeholder="character to codepoint (start with #) to search for" @bind-Value="@searchTerm" DebounceInterval="100" Immediate="true" />
+
 <MudGrid>
     @if (!Characters.Any())
     {
