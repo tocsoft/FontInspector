@@ -18,7 +18,7 @@ namespace FontInspector
         private StringBuilder linesString = new StringBuilder();
         private GlyphColor? _color = null;
         public string Svg
-            => $"<svg style=\"width:{boxWidth}px; height:{boxHeight}px\" viewBox=\"{-Padding} {-Padding} {maxWidth + Padding} {maxHeight + Padding}\"><g>{linesString}{svgString}</g></svg>";
+            => $"<svg style=\"width:{boxWidth}px; height:{boxHeight}px\" viewBox=\"{-Padding} {-Padding} {boxWidth} {boxHeight}\"><g>{linesString}{svgString}</g></svg>";
 
         private readonly TextOptions options;
         private float fontSize => options.Font.Size;
@@ -59,34 +59,37 @@ namespace FontInspector
         List<GlyphMetrics> metricsToAdorn = new List<GlyphMetrics>();
         public void EndText()
         {
-            var metrics = metricsToAdorn.Select(glyph =>
+            if (metricsToAdorn.Any())
             {
-                var lsb = FontScaleToPixelScape(glyph.LeftSideBearing);
-                var width = FontScaleToPixelScape(glyph.AdvanceWidth);
-                var height = FontScaleToPixelScape(glyph.AdvanceHeight);
-                var asscender = height - FontScaleToPixelScape(options.Font.FontMetrics.HorizontalMetrics.Ascender);
-                var baseline = height + FontScaleToPixelScape(options.Font.FontMetrics.HorizontalMetrics.Descender);
-                return (lsb, width, height, asscender, baseline);
-            }).Take(1);
+                var metrics = metricsToAdorn.Select(glyph =>
+                {
+                    var lsb = FontScaleToPixelScape(glyph.LeftSideBearing);
+                    var width = FontScaleToPixelScape(glyph.AdvanceWidth);
+                    var height = FontScaleToPixelScape(glyph.AdvanceHeight);
+                    var asscender = height - FontScaleToPixelScape(options.Font.FontMetrics.HorizontalMetrics.Ascender);
+                    var baseline = height + FontScaleToPixelScape(options.Font.FontMetrics.HorizontalMetrics.Descender);
+                    return (lsb, width, height, asscender, baseline);
+                }).Take(1);
 
-            var lsb = metrics.Min(x => x.lsb);
-            var rsb = lsb + metrics.Max(x => x.width);
-            var height = metrics.Max(x => x.height);
-            var asscender = metrics.Min(x => x.asscender);
-            var baseline = metrics.Max(x => x.baseline);
+                var lsb = metrics.Min(x => x.lsb);
+                var rsb = lsb + metrics.Max(x => x.width);
+                var height = metrics.Max(x => x.height);
+                var asscender = metrics.Min(x => x.asscender);
+                var baseline = metrics.Max(x => x.baseline);
 
-            if (AddMetricAddornments)
-            {
-                AddVLine(lsb, "lsb");
-                AddVLine(rsb, "advance-width");
+                if (AddMetricAddornments)
+                {
+                    AddVLine(lsb, "lsb");
+                    AddVLine(rsb, "advance-width");
 
-                AddHLine(height, "descender");
-                AddHLine(baseline, "baseline");
-                AddHLine(asscender, "assender");
+                    AddHLine(height, "descender");
+                    AddHLine(baseline, "baseline");
+                    AddHLine(asscender, "assender");
+                }
+
+                boxWidth = MathF.Max(boxWidth, rsb + Padding * 2);
+                maxWidth = MathF.Max(maxWidth, rsb + Padding);
             }
-
-            boxWidth = MathF.Max(boxWidth, rsb + Padding * 2);
-            maxWidth = MathF.Max(maxWidth, rsb + Padding);
         }
 
         public void BeginFigure()
@@ -146,7 +149,7 @@ namespace FontInspector
                 svgString.Append($"fill:#{_color.Value.Red:X2}{_color.Value.Green:X2}{_color.Value.Blue:X2}{_color.Value.Alpha:X2}; ");
             }
 
-            svgString.Append($"fill-rule: evenodd;\"");
+            svgString.Append($"fill-rule: nonzero;\"");
 
             svgString.Append($" />");
 

@@ -1,6 +1,7 @@
 ﻿.svg-text svg path,
 .glyph svg path {
     fill: var(--mud-palette-text-primary);
+    fill-rule: nonzero;
 }
 
 svg line.adornment {

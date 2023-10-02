@@ -8,8 +8,24 @@
 
 <MudTextField Label="Text" Lines="@lines" Placeholder="Some text to show" @bind-Value="@text" DebounceInterval="100" Variant="Variant.Outlined" />
 <MudSlider @bind-Value="@size">Size - @(size)pt</MudSlider>
+<MudSelect T="SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags"
+           Label="Features"
+           MultiSelection="true"
+           MultiSelectionTextFunc="ProcessTagSelectList"
+           Variant="Variant.Outlined" @bind-SelectedValues="FeatureTags" AnchorOrigin="Origin.BottomCenter">
+    @foreach (var tag in Enum.GetValues<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags>())
+    {
+        <MudSelectItem Value="@tag">@(FeatureTagMeta.GetName(tag))</MudSelectItem>
+    }
+</MudSelect>
+
 <div style="overflow:auto" id="text-area">
-    @if (CanRenderSvg)
+    @if (renderError != null)
+    {
+        <MudAlert Severity="Severity.Error">@(renderError.Message)</MudAlert>
+
+    }
+    else if (CanRenderSvg)
     {
         <MudPaper Class="svg-text">
             @((MarkupString)Svg)
@@ -23,6 +39,19 @@
 
 
 @code {
+    private IEnumerable<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags> _tags = Enumerable.Empty<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags>();
+
+    [Parameter]
+    public IEnumerable<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags> FeatureTags
+    {
+        get => _tags;
+        set
+        {
+            _tags = value;
+            _ = RefreshSvg();
+        }
+    }
+
     private FontFamily _fontFamily;
 
     [Parameter]
@@ -69,6 +98,7 @@
             _ = RefreshSvg();
         }
     }
+    private Exception? renderError = null;
 
     private int _size = 64;
     private int size
@@ -92,6 +122,7 @@
     {
         try
         {
+            renderError = null;
             SvgLoading = true;
             var old = Svg;
             Svg = null;
@@ -112,7 +143,8 @@
             var opts = new TextOptions(font)
                 {
                     WrappingLength = width,
-                    WordBreaking = WordBreaking.BreakWord
+                    WordBreaking = WordBreaking.BreakWord,
+                    FeatureTags = FeatureTags.Select(x => (SixLabors.Fonts.Tables.AdvancedTypographic.Tag)x).ToArray(),
                 };
             // wrapper size!!!
             var renderer = new SvgTextFontRenderer(opts)
@@ -129,7 +161,8 @@
         }
         catch (Exception ex)
         {
-            var r = ex;
+            renderError = ex;
+            this.StateHasChanged();
         }
     }
 
@@ -145,5 +178,10 @@
     {
         _ = RefreshSvg();
         return base.OnInitializedAsync();
+    }
+
+    string ProcessTagSelectList(List<string> items)
+    {
+        return string.Join(", ", items.Select(Enum.Parse<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags>).Select(x => FeatureTagMeta.GetName(x)));
     }
 }
