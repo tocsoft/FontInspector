@@ -32,7 +32,7 @@
                 <MudFileUpload T="IReadOnlyList<IBrowserFile>"
                                OnFilesChanged="OnInputFileChanged"
                                   AppendMultipleFiles Hidden="false" Class="flex-1"
-                                  InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20" InputStyle="opacity:0"
+                                InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20" InputStyle="opacity:0"
                  @ondragenter="@SetDragClass" @ondragleave="@ClearDragClass" @ondragend="@ClearDragClass">
                      <ButtonTemplate>
                          <MudPaper Outlined="true" Class="@DragClass">
@@ -55,11 +55,11 @@
                                         <MudChip Color="Color.Dark" Text="@file" />
                                     }
 
-                                    <MudText Typo="Typo.subtitle2">Drag and drop files here or click to load one or more font files</MudText>
+                                    <MudText Typo="Typo.subtitle2">Drag and drop files here or click to load one or more font files. (Max 2Mb per file)</MudText>
                                 }
                                 else
                                 {
-                                    <MudText Typo="Typo.h6">Drag and drop files here or click to load one or more font files</MudText>
+                                    <MudText Typo="Typo.h6">Drag and drop files here or click to load one or more font files. (Max 2Mb per file)</MudText>
                                 }
                             }
 
@@ -91,13 +91,12 @@
                             <MudAlert Severity="Severity.Normal" Variant="Variant.Filled">Failed to load @string.Join(",", badFileNames)</MudAlert>
                         }
 
-                        <MudText Typo="Typo.h6">Drag and drop files here or click to load one or more font files</MudText>
+                        <MudText Typo="Typo.h6">Drag and drop files here or click to load one or more font files. (Max 2Mb per file)</MudText>
                     }
                 </MudPaper>
             </ButtonTemplate>
         </MudFileUpload>
     }
-
 
 
 </MudStack>
@@ -177,7 +176,7 @@
         {
             try
             {
-                using var fs = file.OpenReadStream(maxAllowedSize: 1024000);
+                using var fs = file.OpenReadStream(maxAllowedSize: 2048000);
                 using var ms = new MemoryStream();
                 await fs.CopyToAsync(ms);
                 ms.Position = 0;
@@ -188,9 +187,8 @@
             }
             catch (Exception ex)
             {
-                badFileNames.Add(file.Name);
+                badFileNames.Add($"{file.Name} - {ex.Message}");
             }
-
         }
         families = fontCollection.Families;
         loadingFonts = false;
