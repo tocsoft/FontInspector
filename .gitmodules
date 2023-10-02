@@ -1,0 +1,4 @@
+[submodule "Fonts"]
+	path = Fonts
+	url = https://github.com/SixLabors/Fonts.git
+	branch = sw/list-code-points
