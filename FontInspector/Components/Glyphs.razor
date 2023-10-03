@@ -24,20 +24,31 @@
     }
     else
     {
-        <Virtualize Items="FilteredCharacters" Context="character">
-            <MudItem xs="6" sm="4" md="3" lg="2" Class="glyph">
-                <MudCard>
-                    <MudCardHeader>
-                        #@character.CodpointHex - @character.Text
+        <Virtualize Items="FilteredCharacters" Context="characterList">
+            <MudItem xs="12">
+                <MudGrid>
+                    @foreach (var character in characterList)
+                    {
+                        <MudItem xs="6" sm="4" md="3" lg="2" Class="glyph">
+                            <MudCard>
+                                <MudCardHeader>
+                                    #@character.CodpointHex - @character.Text
 
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudStack>
-                            @((MarkupString)character.Svg)
-                            <div>@character.Name</div>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    <MudStack>
+                                        @((MarkupString)character.Svg)
+                                        <MudText Class="char-name">
+                                            <MudTooltip Text="@character.Name">
+                                                @character.Name
+                                            </MudTooltip>
+                                        </MudText>
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
             </MudItem>
         </Virtualize>
     }
@@ -157,7 +168,7 @@
         }
     }
 
-    private List<Character> FilteredCharacters
+    private List<List<Character>> FilteredCharacters
     {
         get
         {
@@ -165,7 +176,7 @@
             {
                 if (!_codepointsToFind.Any())
                 {
-                    return Characters;
+                    return Characters.Bucketize(6);
                 }
 
                 IEnumerable<Character> chars = Enumerable.Empty<Character>();
@@ -178,7 +189,7 @@
                 filteredCharacters = chars.OrderBy(x => x.codepoint.Value).ToList();
             }
 
-            return filteredCharacters;
+            return filteredCharacters.Bucketize(6);
         }
     }
 

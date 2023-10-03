@@ -4,6 +4,10 @@
     fill-rule: nonzero;
 }
 
+.glyph svg {
+    margin: 0 auto;
+}
+
 svg line.adornment {
     opacity: 0.2;
     stroke-dasharray: 4;
@@ -22,6 +26,8 @@ svg line.adornment-descender {
 
     .glyph .mud-card-content {
         min-height: 190px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
 .mud-grid > div {
@@ -36,4 +42,11 @@ svg line.adornment-descender {
 
 .mud-paper {
     background-color: var(--mud-palette-drawer-background);
+}
+
+.char-name .mud-tooltip-inline {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.4em;
+    width: 100%;
 }

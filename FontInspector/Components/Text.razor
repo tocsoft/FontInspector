@@ -4,7 +4,6 @@
 @using System.Text;
 @using System.Runtime.CompilerServices;
 @using System.Numerics;
-@inject IJSRuntime JsRuntime
 
 <MudTextField Label="Text" Lines="@lines" Placeholder="Some text to show" @bind-Value="@text" DebounceInterval="100" Variant="Variant.Outlined" />
 <MudSlider @bind-Value="@size">Size - @(size)pt</MudSlider>
@@ -19,7 +18,7 @@
     }
 </MudSelect>
 
-<div style="overflow:auto" id="text-area">
+<div style="overflow:auto">
     @if (renderError != null)
     {
         <MudAlert Severity="Severity.Error">@(renderError.Message)</MudAlert>
@@ -28,7 +27,9 @@
     else if (CanRenderSvg)
     {
         <MudPaper Class="svg-text">
-            @((MarkupString)Svg)
+            <div @ref="svgWrapper">
+                @((MarkupString)Svg)
+            </div>
         </MudPaper>
     }
     else
@@ -39,6 +40,8 @@
 
 
 @code {
+    private ElementReference svgWrapper;
+
     private IEnumerable<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags> _tags = Enumerable.Empty<SixLabors.Fonts.Tables.AdvancedTypographic.FeatureTags>();
 
     [Parameter]
@@ -117,23 +120,24 @@
     }
 
     private int lines = 2;
-
+    private SemaphoreSlim locker = new SemaphoreSlim(1);
     public async Task RefreshSvg()
     {
         try
         {
+            await locker.WaitAsync();
             renderError = null;
             SvgLoading = true;
             var old = Svg;
             Svg = null;
+            var dimension = await svgWrapper.MudGetBoundingClientRectAsync();
 
-            var dimension = await JsRuntime.InvokeAsync<WindowDimension>("getElementDimensions", "#text-area");
             int counter = 100;
             while (dimension == null && counter > 0)
             {
                 --counter;
                 await Task.Delay(100);
-                dimension = await JsRuntime.InvokeAsync<WindowDimension>("getElementDimensions", "#text-area");
+                dimension = await svgWrapper.MudGetBoundingClientRectAsync();
             }
 
             var padding = 20;
@@ -142,7 +146,7 @@
 
             var opts = new TextOptions(font)
                 {
-                    WrappingLength = width,
+                    WrappingLength = (float)width,
                     WordBreaking = WordBreaking.BreakWord,
                     FeatureTags = FeatureTags.Select(x => (SixLabors.Fonts.Tables.AdvancedTypographic.Tag)x).ToArray(),
                 };
@@ -154,16 +158,16 @@
             TextRenderer.RenderTextTo(renderer, text, opts);
 
             Svg = renderer.Svg;
-            if (old != Svg)
-            {
-                this.StateHasChanged();
-            }
         }
         catch (Exception ex)
         {
             renderError = ex;
-            this.StateHasChanged();
         }
+        finally
+        {
+            locker.Release();
+        }
+        this.StateHasChanged();
     }
 
     private bool SvgLoading { get; set; } = false;
