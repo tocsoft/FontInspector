@@ -5,8 +5,6 @@ VisualStudioVersion = 17.7.34024.191
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FontInspector", "FontInspector\FontInspector.csproj", "{3BCAEA5A-6471-4238-8924-E13A45715BE8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SixLabors.Fonts", "Fonts\src\SixLabors.Fonts\SixLabors.Fonts.csproj", "{797A7CD7-259C-482C-83AA-DE912D50A65A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,18 +15,11 @@ Global
 		{3BCAEA5A-6471-4238-8924-E13A45715BE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BCAEA5A-6471-4238-8924-E13A45715BE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BCAEA5A-6471-4238-8924-E13A45715BE8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{797A7CD7-259C-482C-83AA-DE912D50A65A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{797A7CD7-259C-482C-83AA-DE912D50A65A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{797A7CD7-259C-482C-83AA-DE912D50A65A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{797A7CD7-259C-482C-83AA-DE912D50A65A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {72F6B181-5628-4AA5-88FE-683041A77A57}
-	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Fonts\shared-infrastructure\src\SharedInfrastructure\SharedInfrastructure.projitems*{797a7cd7-259c-482c-83aa-de912d50a65a}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

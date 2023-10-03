@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -11,10 +11,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.22" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.22" PrivateAssets="all" />
     <PackageReference Include="MudBlazor" Version="6.10.0" />
+    <PackageReference Include="SixLabors.Fonts" Version="2.0.1-alpha.0.3" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Fonts\src\SixLabors.Fonts\SixLabors.Fonts.csproj" />
-  </ItemGroup>
-
 </Project>
